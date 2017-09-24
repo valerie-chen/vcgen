@@ -9,6 +9,7 @@ object VCGen {
 
   case class Num(value: Int) extends ArithExp
   case class Var(name: String) extends ArithExp
+  case class Read(name: String, ind: ArithExp) extends ArithExp
   case class Add(left: ArithExp, right: ArithExp) extends ArithExp
   case class Sub(left: ArithExp, right: ArithExp) extends ArithExp
   case class Mul(left: ArithExp, right: ArithExp) extends ArithExp
@@ -36,6 +37,7 @@ object VCGen {
   type Block = List[Statement]
 
   case class Assign(x: String, value: ArithExp) extends Statement
+  case class ParAssign(x1: String, x2: String, value1: ArithExp, value2: ArithExp) extends Statement
   case class If(cond: BoolExp, th: Block, el: Block) extends Statement
   case class While(cond: BoolExp, body: Block) extends Statement
 
@@ -52,6 +54,7 @@ object VCGen {
     def num   : Parser[ArithExp] = "-?\\d+".r ^^ (s => Num(s.toInt))
     def atom  : Parser[ArithExp] =
       "(" ~> aexp <~ ")" |
+      pvar ~ ("[" ~> atom <~ "]") ^^ {case v ~ i => Read(v, i)} |
       num | pvar ^^ { Var(_) } |
       "-" ~> atom ^^ { Sub(Num(0), _) }
     def factor: Parser[ArithExp] =
@@ -73,7 +76,7 @@ object VCGen {
 
     /* Parsing for Comparison. */
     def comp  : Parser[Comparison] =
-      aexp ~ ("=" | "<=" | ">=" | "<" | ">") ~ aexp ^^ {
+      aexp ~ ("=" | "<=" | ">=" | "<" | ">" | "!=") ~ aexp ^^ {
         case left ~ op ~ right => (left, op, right)
       }
 
@@ -95,6 +98,9 @@ object VCGen {
     def stmt  : Parser[Statement] =
       (pvar <~ ":=") ~ (aexp <~ ";") ^^ {
         case v ~ e => Assign(v, e)
+      } |
+      (pvar <~ ",") ~ (pvar <~ ":=") ~ (aexp <~ ",") ~ (aexp <~ ";") ^^ {
+        case v1 ~ v2 ~ e1 ~ e2 => ParAssign(v1, v2, e1, e2)
       } |
       ("if" ~> bexp <~ "then") ~ (block <~ "else") ~ (block <~ "end") ^^ {
         case c ~ t ~ e => If(c, t, e)
