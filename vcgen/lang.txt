@@ -137,3 +137,7 @@ possible extra credit, and sure fun.
   end of statements.
 - Support hexadecimal and octal numbers in the lexer.
 - Support "for" loops (like in Pascal, not like in C).
+- Support true parallel assignment, as opposed to just double assignment.
+  i.e. x, y, z := y, z, x
+- Support combining parallel assignment and arrays:
+  x[0], x[1] := x[1], x[0]
