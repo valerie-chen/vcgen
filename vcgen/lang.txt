@@ -91,6 +91,7 @@ noted ASSN in the following statement definition and will be defined in
 the next session.
 
 STMT := x ":=" AEXP ";"
+     | x, y := AEXP "," AEXP ";" 
      | x "[" AEXP "]" ":=" AEXP ";"
      | "if" BEXP "then" BLOCK "else" BLOCK "end"
      | "if" BEXP "then" BLOCK "end"
@@ -136,5 +137,3 @@ possible extra credit, and sure fun.
   end of statements.
 - Support hexadecimal and octal numbers in the lexer.
 - Support "for" loops (like in Pascal, not like in C).
-- (hard) Support parallel assignments, like
-  x, y := y, x;
