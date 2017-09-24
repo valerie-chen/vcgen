@@ -37,6 +37,7 @@ object VCGen {
   type Block = List[Statement]
 
   case class Assign(x: String, value: ArithExp) extends Statement
+  case class Write(x: String, ind: ArithExp, value: ArithExp) extends Statement
   case class ParAssign(x1: String, x2: String, value1: ArithExp, value2: ArithExp) extends Statement
   case class If(cond: BoolExp, th: Block, el: Block) extends Statement
   case class While(cond: BoolExp, body: Block) extends Statement
@@ -54,7 +55,7 @@ object VCGen {
     def num   : Parser[ArithExp] = "-?\\d+".r ^^ (s => Num(s.toInt))
     def atom  : Parser[ArithExp] =
       "(" ~> aexp <~ ")" |
-      pvar ~ ("[" ~> atom <~ "]") ^^ {case v ~ i => Read(v, i)} |
+      pvar ~ ("[" ~> aexp <~ "]") ^^ {case v ~ i => Read(v, i)} |
       num | pvar ^^ { Var(_) } |
       "-" ~> atom ^^ { Sub(Num(0), _) }
     def factor: Parser[ArithExp] =
@@ -96,6 +97,9 @@ object VCGen {
     /* Parsing for Statement and Block. */
     def block : Parser[Block] = rep(stmt)
     def stmt  : Parser[Statement] =
+      pvar ~ ("[" ~> aexp <~ "]") ~ (":=" ~> aexp <~ ";") ^^ {
+        case v ~ i ~ e => Write(v, i, e)
+      } |
       (pvar <~ ":=") ~ (aexp <~ ";") ^^ {
         case v ~ e => Assign(v, e)
       } |
