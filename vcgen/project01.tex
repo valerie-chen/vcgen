@@ -1,0 +1,90 @@
+\documentclass[11pt]{article}
+%\usepackage{homework}
+\usepackage{enumerate}
+\usepackage{courier}
+\usepackage{url}
+\usepackage{textcomp}
+%\sethwtitle{Software Analysis and Verification - Fall 2015}
+\title{Software Analysis and Verification - Fall 2017}
+\author{Ruzica Piskac}%
+%\sethwnumber{01}%
+\date{\today}
+%\makehwheader%
+
+\begin{document}
+%\makehwtitle%
+\maketitle
+
+You will be given details about the project submission / evaluation in a separate email.\\
+
+The deadline for Project 01 is October 28, 7:00AM (morning!).
+
+\section{Verification Condition Generation}
+
+Build a verification condition generator (VCG) based on computation of weakest
+preconditions, as described in the lectures.
+
+Your VCG should compute verification conditions, based on the code and
+provided annotations. To prove the resulting formulas, connect your VCG to a
+theorem prover to prove the verification conditions. You should use SMT-LIB
+format and an SMT solver of your choice.
+
+%%%%%%%%%%%%%%%%%%%%
+
+We developed a code skeleton for Scala. However, if you do not want to use Scala, but some other language of you choice, you are welcome to do that, but we provide skeletons only for Scala. 
+
+A code skeleton is provided on Yale's private Github service.  You must be
+connected to Yale network to be able to use it (simply use Yale's wifi).
+
+Even if you will not use Scala, check the repository to understand the syntax used to define programs. Independently of your choice of the language to implement VCG,
+ you need to use the program syntax given in the repository.
+
+Here are instructions if you are planning to use Scala:
+\begin{enumerate}
+\item Install Scala on your computer.
+\item Clone the skeleton repository (\url{https://git.yale.edu/wth9/cs454}).
+\item Go to the directory \texttt{cs454/vcgen}.
+\item Run \texttt{make}, read the output and test the parser on an example.
+\item Edit \texttt{src/vcgen.scala}, fix bugs, rinse and repeat.
+\item To submit, compress the \texttt{vcgen} and use the Classes*v2 system.
+\end{enumerate}
+
+Start the step~5 by modifying the parser to handle logical assertions,
+pre- and postconditions and loop invariants (inspire your code from what
+is already in the skeleton).  After that, write a recursive function that
+goes through the program AST and compute the weakest precondition.  Only
+at the end, write a printing function that outputs the verification condition
+using the SMT-LIB format.
+
+It is possible that we issue some amendments to the language or that I
+add extra material.  If so, I will signal it in a Classes*v2 announcement
+and you will use \texttt{git pull} to fetch the changes.
+%%%%%%%%%%%%%%%%%%%%
+
+Additionally, keep the benchmarks that you use to test your code. 
+You should submit your five (or more) benchmarks by October 27, 5PM (strict
+deadline!) so that we can prepare them for the competition.  Your benchmarks
+should include at least five programs in the original IMP language with loops and annotations.
+
+%%%%%%%%%%%%%%%%%%%%
+%To earn bonus points, extend the IMP programming language with extra features
+%and adapt your VCG program to handle them.  Provide a quick justification of
+%the code you use in your VCG to generate weakest preconditions of these extensions.
+
+%\begin{enumerate}
+%\item Pascal-type for-loop (example: \texttt{for i = n to m do ... end}).
+%\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%
+Notes on the language: 
+\begin{enumerate}
+\item Double assignment is supported, parallel assignment to two variables is not.
+\item Double assignment to arrays is not supported. (i.e., you cannot write a[0], a[1] = a[1], a[0])
+\end{enumerate}
+
+%The items above are sorted by increasing difficulty and extra credit.
+%Do not start working on extra credit if you are not confident your
+%VCG is working properly for the simple cases.
+%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
