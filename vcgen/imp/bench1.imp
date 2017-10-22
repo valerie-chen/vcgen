@@ -1,0 +1,13 @@
+program bench1
+	pre 0 <= a && 0 <= b
+	post c = 2 * a + b
+is
+	c := a;
+	n := b;
+	while n != 0
+		inv c = a + b - n && 0 <= n
+	do
+		c := c + 1;
+		n := n - 1;
+	end
+end

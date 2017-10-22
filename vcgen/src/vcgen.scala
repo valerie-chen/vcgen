@@ -30,7 +30,28 @@ object VCGen {
   case class BDisj(left: BoolExp, right: BoolExp) extends BoolExp
   case class BConj(left: BoolExp, right: BoolExp) extends BoolExp
   case class BParens(b: BoolExp) extends BoolExp
+  
+  /* Assertions and assert blocks. */
+  trait Assertion
+  type AssertionBlock = List[Assertion]
 
+  case class Assn(b: BoolExp) extends Assertion
+  case class ANot(b: Assertion) extends Assertion
+  case class ADisj(left: Assertion, right: Assertion) extends Assertion
+  case class AConj(left: Assertion, right: Assertion) extends Assertion
+  case class AImp(left: Assertion, right: Assertion) extends Assertion
+  case class ForAll(x: String, cond: Assertion) extends Assertion
+  case class Exists(x: String, cond: Assertion) extends Assertion
+
+  trait Annotation
+  type AnnotationBlock = List[Annotation]
+
+  // class Post(a: AssertionBlock)
+  // class Pre(a: AssertionBlock)
+  // class Inv(a: AssertionBlock)
+  case class Post(a: Assertion) extends Annotation
+  case class Pre(a: Assertion) extends Annotation
+  case class Inv(a: Assertion) extends Annotation
 
   /* Statements and blocks. */
   trait Statement
@@ -40,11 +61,12 @@ object VCGen {
   case class Write(x: String, ind: ArithExp, value: ArithExp) extends Statement
   case class ParAssign(x1: String, x2: String, value1: ArithExp, value2: ArithExp) extends Statement
   case class If(cond: BoolExp, th: Block, el: Block) extends Statement
-  case class While(cond: BoolExp, body: Block) extends Statement
+  case class While(cond: BoolExp, inv: AnnotationBlock, body: Block) extends Statement
 
+  // type VBlock = Product4[Pre, Inv, Block, Post]
 
   /* Complete programs. */
-  type Program = Product2[String, Block]
+  type Program = Product4[String, AnnotationBlock, AnnotationBlock, Block]
 
 
   object ImpParser extends RegexParsers {
@@ -94,6 +116,52 @@ object VCGen {
       }
     def bexp  : Parser[BoolExp] = bdisj
 
+    /* Parsing for Assertion. */
+    def antatom : Parser[Assertion] =
+      bexp ^^ { Assn(_) } |
+      ("forall" ~> pvar <~ ",") ~ assn ^^ {
+        case v ~ a => ForAll(v, a)
+      } |
+      ("exists" ~> pvar <~ ",") ~ assn ^^ {
+        case v ~ a => Exists(v, a)
+      }
+    def acmp : Parser[Assertion] = 
+      antatom | "(" ~> antatom <~ ")" | "!" ~> antatom ^^ { ANot(_) }
+    def aimp : Parser[Assertion] =
+      acmp ~ rep("==>" ~> acmp) ^^ {
+        case left ~ list => (left /: list) {AImp(_, _)}
+      }
+    def aconj : Parser[Assertion] =
+      aimp ~ rep("&&" ~> aimp) ^^ {
+        case left ~ list => (left /: list) { AConj(_, _) }
+      }
+    def adisj : Parser[Assertion] =
+      aconj ~ rep("||" ~> aconj) ^^ {
+        case left ~ list => (left /: list) { ADisj(_, _) } 
+      }
+    def assn : Parser[Assertion] = adisj
+
+    /* Parsing for Postcondition Assertions. */
+    def postblock : Parser[AnnotationBlock] = rep(postantn)
+    def postantn : Parser[Annotation] =
+      ("post" ~> assn) ^^ {
+        case a => Post(a) 
+      }
+
+    /* Parsing for Precondition Assertions. */
+    def preblock : Parser[AnnotationBlock] = rep(preantn)
+    def preantn : Parser[Annotation] =
+      ("pre" ~> assn) ^^ {
+        case a => Pre(a)
+      }
+
+    /* Parsing for Invariant Assertions. */
+    def invblock : Parser[AnnotationBlock] = rep(invantn)
+    def invantn : Parser[Annotation] =
+      ("inv" ~> assn) ^^ {
+        case a => Inv(a)
+      }
+
     /* Parsing for Statement and Block. */
     def block : Parser[Block] = rep(stmt)
     def stmt  : Parser[Statement] =
@@ -112,14 +180,14 @@ object VCGen {
       ("if" ~> bexp <~ "then") ~ (block <~ "end") ^^ {
         case c ~ t => If(c, t, Nil)
       } |
-      ("while" ~> (bexp /* ~ rep("inv" ~ assn) */) <~ "do") ~ (block <~ "end") ^^ {
-        case c ~ b => While(c, b)
+      ("while" ~> bexp) ~ invblock ~ ("do" ~> block <~ "end") ^^ {
+        case c ~ i ~ b => While(c, i, b)
       }
 
     /* Parsing for Program. */
     def prog   : Parser[Program] =
-      ("program" ~> pvar <~ "is") ~ (block <~ "end") ^^ {
-        case n ~ b => (n, b)
+      ("program" ~> pvar) ~ preblock ~ postblock ~ ("is" ~> block <~ "end") ^^ {
+        case n ~ pre ~ post ~ b => (n, pre, post, b)
       }
   }
 
