@@ -10,6 +10,7 @@ import WeakestPreGen._
 import GuardedGen._
 import ImpParser._
 
+
 object VCGen {
 
   def prettyPrint(wp: Assertion) = {
@@ -63,9 +64,10 @@ object VCGen {
     val wp = wpgen(guarded)
     println("WEAKEST PRE:")
     println(wp)
+
     println("PRETTY:")
     prettyPrint(wp)
-
+    
     // test
     // val sat = ("echo " + testz3) #| "z3 -smt2 -in" !!;
     val sat = smtgen(wp).mkString
