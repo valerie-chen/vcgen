@@ -11,6 +11,17 @@ object GuardedGen {
 		newDummyVar
 	}
 
+	def havocsFromModifiedVars(block: Block) : GuardedProgram = block match {
+		case Nil => List()
+		case s :: right => s match {
+			case Assign(x, v) => HavocVar(x) :: havocsFromModifiedVars(right)
+			case Write(x, i, v) => HavocArray(x, i) :: havocsFromModifiedVars(right)
+			case ParAssign(x1, x2, v1, v2) => HavocVar(x1) :: (HavocVar(x2) :: havocsFromModifiedVars(right))
+			case If(cond, th, el) => havocsFromModifiedVars(th) ::: havocsFromModifiedVars(el) ::: havocsFromModifiedVars(right)
+			case While(cond, inv, body) => havocsFromModifiedVars(body) ::: havocsFromModifiedVars(right)
+		}
+	}
+
 	def allVars(prog: IMPProgram) : List[String] = {
 
 		def arithVars(a: ArithExp) : List[String] = a match {
@@ -125,7 +136,7 @@ object GuardedGen {
 				}
 				case While(cond, inv, body) => {
 					var a1 = inv.map(Assert(_))
-					var havocs = List(HavocVar("junk")) // all variables in body
+					var havocs = havocsFromModifiedVars(body)
 					var a2 = inv.map(Assume(_))
 					var a3 = Assume(Assn(cond)) :: mGuard(body) ::: inv.map(Assert(_)) ::: List(Assume(Assn(False)))
 					var a4 = List(Assume(Assn(BNot(cond))))
