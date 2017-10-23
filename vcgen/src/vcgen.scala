@@ -20,6 +20,6 @@ object VCGen {
     println(guarded)
     val wp = wpgen(guarded)
     println("WEAKEST PRE:")
-    println(guarded)
+    println(wp)
   }
 }
