@@ -88,25 +88,23 @@ object WeakestPreGen {
 	def wpgen(g: GuardedProgram) : Assertion = {
 		var allvars = allGuardVars(g)
 
-		def wp(gp : GuardedProgram, a : Assertion) : Assertion = gp match {
+		def wp(gp : GuardedProgram, a : Assertion, gvars : List[String]) : Assertion = gp match {
 			case Nil => Assn(True)
 			case s :: right => s match {
-				case Assume(cmd) => AImp(cmd, wp(right, a))
-				case Assert(cmd) => AConj(cmd, wp(right, a))
+				case Assume(cmd) => AImp(cmd, wp(right, a, gvars))
+				case Assert(cmd) => AConj(cmd, wp(right, a, gvars))
 				case HavocVar(x) => {
 					val nxt = nextVar()
-					allVars :+ nxt
-					wpAssert(x, None, nxt, wp(right, a))
+					wpAssert(x, None, nxt, wp(right, a, nxt :: gvars))
 				}
 				case HavocArray(x, i) => {
 					val nxt = nextVar()
-					allVars :+ nxt
-					wpAssert(x, Some(i), nxt, wp(right, a))
+					wpAssert(x, Some(i), nxt, wp(right, a, nxt :: gvars))
 				}
-				case LogSplit(cmd1, cmd2) => AConj(wp(cmd1, a), wp(cmd2, a))
+				case LogSplit(cmd1, cmd2) => AConj(wp(cmd1, a, gvars), wp(cmd2, a, gvars))
 			}
 		}
 
-		wp(g, Assn(True))
+		wp(g, Assn(True), allvars)
 	}
 }
