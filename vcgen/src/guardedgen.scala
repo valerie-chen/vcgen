@@ -62,6 +62,36 @@ object GuardedGen {
 		(prog._1 :: assertionVars(prog._2) ::: assertionVars(prog._3) ::: blockVars(prog._4)).distinct
 	}
 
+	def substituteVar(name: String, index: Option[ArithExp], value: ArithExp, sub: String) : ArithExp = value match {
+		case Num(v) => Num(v)
+		case Var(n) => index match {
+			case None => {
+				if (n == name) { 
+					Var(sub)
+				} else {
+					Var(name)
+				}
+			}
+			case Some(i) => Var(name)
+		}
+		case Read(n, i) => index match {
+			case None => Read(n, i)
+			case Some(i2) => {
+				if (i == i2 && n == name) {
+					Var(sub)
+				} else {
+					Read(n, i)
+				}
+			}
+		}
+		case Add(left, right) => Add(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Sub(left, right) => Sub(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Mul(left, right) => Mul(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Div(left, right) => Div(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Mod(left, right) => Mod(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Parens(a) => Parens(substituteVar(name, index, a, sub))
+	}
+
   /* Parsing for Program. */
   def makeGuarded(prog: IMPProgram) : GuardedProgram = {
   	var impVars = allVars(prog)
@@ -74,7 +104,7 @@ object GuardedGen {
 					var tmp = nextVar()
 					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
 					var a2 = HavocVar(x)
-					var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA1")))))
+					var a3 = Assume(Assn(BCmp((Var(x), "=", substituteVar(x, None, value, tmp)))))
 					a1 :: a2 :: a3 :: mGuard(right)
 				}
 				case Write(x, i, value) => {
@@ -82,7 +112,7 @@ object GuardedGen {
 					var tmp = nextVar()
 					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
 					var a2 = HavocVar(x)
-					var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA2")))))
+					var a3 = Assume(Assn(BCmp((Var(x), "=", substituteVar(x, Some(i), value, tmp)))))
 					a1 :: a2 :: a3 :: mGuard(right)
 				}
 				case ParAssign(x1, x2, value1, value2) => {
