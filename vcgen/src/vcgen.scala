@@ -1,4 +1,5 @@
 import scala.util.parsing.combinator._
+import scala.language.postfixOps
 import java.io.FileReader
 import sys.process._
 
@@ -25,6 +26,8 @@ object VCGen {
     println("WEAKEST PRE:")
     println(wp)
 
-    ("echo " + test) #| "z3 -smt2 -in" !
+    val sat = ("echo " + test) #| "z3 -smt2 -in" !!;
+    println("SAT:")
+    println(sat)
   }
 }
