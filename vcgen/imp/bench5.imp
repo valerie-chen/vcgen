@@ -1,0 +1,9 @@
+program bench5 
+is
+  if x < 5
+  then
+    x := 4;
+  else 
+    x := 7;
+  end
+end

@@ -87,7 +87,7 @@ object WeakestPreGen {
 	// 	case Exists(x, c) => Exists(x, if (x.contains(old)) {c} else {wpAssert(old, ind, tmp, c)})
 	// }
 
-	def modifyRight(g: GuardedProgram, name: String, index: Option[ArithExp], sub: String) : GuardedProgram = {
+	def modify(assn: Assertion, name: String, index: Option[ArithExp], sub: String) : Assertion = {
 
 		def modifyArith(ar: ArithExp, name: String, index: Option[ArithExp], sub: String) : ArithExp = ar match {
 			case Num(x) => Num(x)
@@ -125,31 +125,47 @@ object WeakestPreGen {
 			}
 		}
 
-		def modifyGuarded(g: GuardedProgram, name: String, index: Option[ArithExp], sub: String) : GuardedProgram = g match {
+		modifyAssn(assn, name, index, sub)
+
+		// def modifyGuarded(g: GuardedProgram, name: String, index: Option[ArithExp], sub: String) : GuardedProgram = g match {
+		// 	case Nil => List()
+		// 	case c :: right => c match {
+		// 		case Assume(cmd) => Assume(modifyAssn(cmd, name, index, sub)) :: modifyGuarded(right, name, index, sub)
+		// 		case Assert(cmd) => Assert(modifyAssn(cmd, name, index, sub)) :: modifyGuarded(right, name, index, sub)
+		// 		case HavocVar(x) => {
+		// 			if (x == name) {
+		// 				HavocVar(sub) :: modifyGuarded(right, name, index, sub)
+		// 			} else {
+		// 				HavocVar(x) :: modifyGuarded(right, name, index, sub)
+ 	// 				}
+		// 		}
+		// 		case HavocArray(x, i) => {
+		// 			if (x == name && i == index.get) {
+		// 				HavocArray(sub, i) :: modifyGuarded(right, name, index, sub) // ???????
+		// 			} else {
+		// 				HavocArray(x, i) :: modifyGuarded(right, name, index, sub) // ????? 
+		// 			}
+		// 		}
+		// 		case LogSplit(cmd1, cmd2) => 
+		// 			LogSplit(modifyGuarded(cmd1, name, index, sub), modifyGuarded(cmd2, name, index, sub)) :: modifyGuarded(right, name, index, sub)
+		// 	}
+		// }
+
+		// modifyGuarded(g, name, index, sub)
+	}
+
+	def reverseWP(g: GuardedProgram) : GuardedProgram = {
+		def reverseGP(g: GuardedProgram) : GuardedProgram = g match {
 			case Nil => List()
-			case c :: right => c match {
-				case Assume(cmd) => Assume(modifyAssn(cmd, name, index, sub)) :: modifyGuarded(right, name, index, sub)
-				case Assert(cmd) => Assert(modifyAssn(cmd, name, index, sub)) :: modifyGuarded(right, name, index, sub)
-				case HavocVar(x) => {
-					if (x == name) {
-						HavocVar(sub) :: modifyGuarded(right, name, index, sub)
-					} else {
-						HavocVar(x) :: modifyGuarded(right, name, index, sub)
- 					}
-				}
-				case HavocArray(x, i) => {
-					if (x == name && i == index.get) {
-						HavocArray(sub, i) :: modifyGuarded(right, name, index, sub) // ???????
-					} else {
-						HavocArray(x, i) :: modifyGuarded(right, name, index, sub) // ????? 
-					}
-				}
-				case LogSplit(cmd1, cmd2) => 
-					LogSplit(modifyGuarded(cmd1, name, index, sub), modifyGuarded(cmd2, name, index, sub)) :: modifyGuarded(right, name, index, sub)
+			case s :: right => s match {
+				case Assume(cmd) => reverseGP(right) ::: List(Assume(cmd))
+				case Assert(cmd) => reverseGP(right) ::: List(Assert(cmd))
+				case HavocVar(x) => reverseGP(right) ::: List(HavocVar(x))
+				case HavocArray(x, i) => reverseGP(right) ::: List(HavocArray(x, i))
+				case LogSplit(cmd1, cmd2) => reverseGP(right) ::: List(LogSplit(reverseGP(cmd2), reverseGP(cmd1)))
 			}
 		}
-
-		modifyGuarded(g, name, index, sub)
+		reverseGP(g)
 	}
 
 	def wpgen(g: GuardedProgram) : Assertion = {
@@ -160,11 +176,13 @@ object WeakestPreGen {
 				case Assert(cmd) => wp(right, AConj(cmd, a))
 				case HavocVar(x) => {
 					val nxt = nextVar(x)
-					wp(modifyRight(right, x, None, nxt), a) //
+					// wp(modifyRight(right, x, None, nxt), a) //
+					wp(right, modify(a, x, None, nxt))
 				}
 				case HavocArray(x, i) => {
 					val nxt = nextVar(x)
-					wp(modifyRight(right, x, Some(i), nxt), a)
+					wp(right, modify(a, x, Some(i), nxt))
+					// wp(modifyRight(right, x, Some(i), nxt), a)
 				}
 				case LogSplit(cmd1, cmd2) => wp(right, AConj(wp(cmd1, a), wp(cmd2, a)))
 			}
@@ -189,7 +207,8 @@ object WeakestPreGen {
 		// 	}
 		// }
 
-		wp(g.reverse, Assn(True))
+		wp(reverseWP(g), Assn(True))
+		// wp(g.reverse, Assn(True))
 		// wp(g, Assn(True), allvars)
 	}
 }
