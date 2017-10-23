@@ -74,6 +74,5 @@ object OurObjects {
   case class Assert(a: Assertion) extends GComm
   case class HavocVar(x: String) extends GComm
   case class HavocArray(x: String, i: ArithExp) extends GComm
-  case class LogSplit(a: GComm, b: GComm) extends GComm
-  case class GCommSet(x: GuardedProgram) extends GComm
+  case class LogSplit(a: GuardedProgram, b: GuardedProgram) extends GComm
 }
