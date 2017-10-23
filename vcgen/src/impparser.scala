@@ -54,10 +54,10 @@ object ImpParser extends RegexParsers {
   /* Parsing for Assertion. */
   def antatom : Parser[Assertion] =
     bexp ^^ { Assn(_) } |
-    ("forall" ~> pvar <~ ",") ~ assn ^^ {
+    ("forall" ~> rep(pvar <~ ",")) ~ assn ^^ {
       case v ~ a => ForAll(v, a)
     } |
-    ("exists" ~> pvar <~ ",") ~ assn ^^ {
+    ("exists" ~> rep(pvar <~ ",")) ~ assn ^^ {
       case v ~ a => Exists(v, a)
     }
   def acmp : Parser[Assertion] = 

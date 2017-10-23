@@ -37,12 +37,12 @@ object OurObjects {
   type AssertionBlock = List[Assertion]
 
   case class Assn(b: BoolExp) extends Assertion
-  case class ANot(b: Assertion) extends Assertion
+  case class ANot(a: Assertion) extends Assertion
   case class ADisj(left: Assertion, right: Assertion) extends Assertion
   case class AConj(left: Assertion, right: Assertion) extends Assertion
   case class AImp(left: Assertion, right: Assertion) extends Assertion
-  case class ForAll(x: String, cond: Assertion) extends Assertion
-  case class Exists(x: String, cond: Assertion) extends Assertion
+  case class ForAll(x: List[String], cond: Assertion) extends Assertion
+  case class Exists(x: List[String], cond: Assertion) extends Assertion
 
   // trait Annotation
   // type AnnotationBlock = List[Annotation]

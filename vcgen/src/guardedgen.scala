@@ -2,51 +2,108 @@ import scala.util._
 import OurObjects._
 
 object GuardedGen {
+	var dummyVarIndex = 0
 
 	def nextVar() : String = {
-		"BLA0"
+		val dummyString = "dummyString"
+		var newDummyVar = dummyString.concat(dummyVarIndex.toString)
+		dummyVarIndex += 1
+		newDummyVar
 	}
 
-	/* Parsing the list of statements. */
-	def mGuard(block: Block) : GuardedProgram = block match {
-		case Nil => List()
-		case s :: right => s match {
-			case Assign(x, value) => {
-				var tmp = nextVar()
-				var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
-				var a2 = HavocVar(x)
-				var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA1")))))
-				a1 :: a2 :: a3 :: mGuard(right)
-			}
-			case Write(x, i, value) => {
-				// GOTTA MODIFY LOTS
-				var tmp = "zzz"// nextVar()
-				var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
-				var a2 = HavocVar(x)
-				var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA2")))))
-				a1 :: a2 :: a3 :: mGuard(right)
-			}
-			case ParAssign(x1, x2, value1, value2) => {
-				mGuard(List(Assign(x1, value1), Assign(x2, value2))) ::: mGuard(right)
-			}
-			case If(cond, th, el) => {
-				var a1 = Assume(Assn(cond)) :: mGuard(th)
-				var a2 = Assume(Assn(BNot(cond))) :: mGuard(el)
-				LogSplit(a1, a2) :: mGuard(right)
-			}
-			case While(cond, inv, body) => {
-				var a1 = inv.map(Assert(_))
-				var havocs = List(HavocVar("junk")) // all variables in body
-				var a2 = inv.map(Assume(_))
-				var a3 = Assume(Assn(cond)) :: mGuard(body) ::: inv.map(Assert(_)) ::: List(Assume(Assn(False)))
-				var a4 = List(Assume(Assn(BNot(cond))))
-				a1 ::: havocs ::: a2 ::: List(LogSplit(a3, a4)) ::: mGuard(right)
+	def allVars(prog: IMPProgram) : List[String] = {
+
+		def arithVars(a: ArithExp) : List[String] = a match {
+			case Num(_) => Nil
+			case Var(v) => List(v)
+			case Read(n, i) => n :: arithVars(i)
+			case Add(l, r) => arithVars(l) ::: arithVars(r)
+			case Sub(l, r) => arithVars(l) ::: arithVars(r)
+			case Mul(l, r) => arithVars(l) ::: arithVars(r)
+			case Div(l, r) => arithVars(l) ::: arithVars(r)
+			case Mod(l, r) => arithVars(l) ::: arithVars(r)
+			case Parens(a) => arithVars(a)
+		}
+
+		def boolVars(b: BoolExp) : List[String] = b match {
+			case False => Nil
+			case True => Nil
+			case BCmp(cmp) => arithVars(cmp._1) ::: arithVars(cmp._3)
+			case BNot(b) => boolVars(b)
+			case BDisj(left, right) => boolVars(left) ::: boolVars(right)
+			case BConj(left, right) => boolVars(left) ::: boolVars(right)
+			case BParens(b) => boolVars(b)
+		}
+
+		def assertionVars(block: AssertionBlock) : List[String] = block match {
+			case Nil => List()
+			case assn :: right => assn match {
+				case Assn(b) => boolVars(b) ::: assertionVars(right)
+				case ANot(a) => assertionVars(a :: right)
+				case ADisj(a, b) => assertionVars(a :: (b :: right))
+				case AConj(a, b) => assertionVars(a :: (b :: right))
+				case AImp(a, b) => assertionVars(a :: (b :: right))
+				case ForAll(x, cond) => x ::: assertionVars(List(cond)) ::: assertionVars(right)
+				case Exists(x, cond) => x ::: assertionVars(List(cond)) ::: assertionVars(right)
 			}
 		}
+
+		def blockVars(block: Block) : List[String] = block match {
+			case Nil => List()
+			case s :: right => s match {
+				case Assign(x, value) => x :: arithVars(value) ::: blockVars(right)
+				case Write(x, ind, value) => x :: arithVars(ind) ::: arithVars(value) ::: blockVars(right)
+				case ParAssign(x1, x2, value1, value2) => x1 :: (x2 :: arithVars(value1) ::: arithVars(value2)) ::: blockVars(right)
+				case If(cond, th, el) => boolVars(cond) ::: blockVars(th) ::: blockVars(el) ::: blockVars(right)
+				case While(cond, inv, body) => boolVars(cond) ::: assertionVars(inv) ::: blockVars(body) ::: blockVars(right)
+			}
+		}
+
+		(prog._1 :: assertionVars(prog._2) ::: assertionVars(prog._3) ::: blockVars(prog._4)).distinct
 	}
 
   /* Parsing for Program. */
   def makeGuarded(prog: IMPProgram) : GuardedProgram = {
+  	var impVars = allVars(prog)
+
+	  /* Parsing the list of statements. */
+		def mGuard(block: Block) : GuardedProgram = block match {
+			case Nil => List()
+			case s :: right => s match {
+				case Assign(x, value) => {
+					var tmp = nextVar()
+					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
+					var a2 = HavocVar(x)
+					var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA1")))))
+					a1 :: a2 :: a3 :: mGuard(right)
+				}
+				case Write(x, i, value) => {
+					// GOTTA MODIFY LOTS
+					var tmp = nextVar()
+					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
+					var a2 = HavocVar(x)
+					var a3 = Assume(Assn(BCmp((Var(x), "=", Var("BLA2")))))
+					a1 :: a2 :: a3 :: mGuard(right)
+				}
+				case ParAssign(x1, x2, value1, value2) => {
+					mGuard(List(Assign(x1, value1), Assign(x2, value2))) ::: mGuard(right)
+				}
+				case If(cond, th, el) => {
+					var a1 = Assume(Assn(cond)) :: mGuard(th)
+					var a2 = Assume(Assn(BNot(cond))) :: mGuard(el)
+					LogSplit(a1, a2) :: mGuard(right)
+				}
+				case While(cond, inv, body) => {
+					var a1 = inv.map(Assert(_))
+					var havocs = List(HavocVar("junk")) // all variables in body
+					var a2 = inv.map(Assume(_))
+					var a3 = Assume(Assn(cond)) :: mGuard(body) ::: inv.map(Assert(_)) ::: List(Assume(Assn(False)))
+					var a4 = List(Assume(Assn(BNot(cond))))
+					a1 ::: havocs ::: a2 ::: List(LogSplit(a3, a4)) ::: mGuard(right)
+				}
+			}
+		}
+
   	var pre = prog._2.map(Assume(_))
   	var post = prog._3.map(Assert(_))
   	pre ::: mGuard(prog._4) ::: post
