@@ -1,0 +1,6 @@
+program example
+	post X > 0
+is
+	X := Y;
+	X := X + 1;
+end

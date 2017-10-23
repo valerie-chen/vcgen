@@ -5,13 +5,14 @@ import sys.process._
 
 // our objects
 import OurObjects._
+import SMTGen._
 import WeakestPreGen._
 import GuardedGen._
 import ImpParser._
 
 object VCGen {
 
-  val test = "(declare-fun x () Int)(declare-fun y () Int)(assert (>= x y))(check-sat)(get-model)(exit)"
+  val testz3 = "(declare-fun x () Int)(declare-fun y () Int)(assert (>= x y))(check-sat)(get-model)(exit)"
 
   def main(args: Array[String]): Unit = {
     val reader = new FileReader(args(0))
@@ -26,8 +27,11 @@ object VCGen {
     println("WEAKEST PRE:")
     println(wp)
 
-    val sat = ("echo " + test) #| "z3 -smt2 -in" !!;
-    println("SAT:")
-    println(sat)
+    // test
+    // val sat = ("echo " + testz3) #| "z3 -smt2 -in" !!;
+    val sat = smtgen(wp).mkString
+    val out = ("echo " + sat) #| "z3 -smt2 -in" !!;
+    println("SAT:") 
+    println(out)
   }
 }

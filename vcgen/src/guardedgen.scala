@@ -4,11 +4,13 @@ import OurObjects._
 object GuardedGen {
 	var dummyVarIndex = 0
 
-	def nextVar() : String = {
-		val dummyString = "dummyString"
-		var newDummyVar = dummyString.concat(dummyVarIndex.toString)
-		dummyVarIndex += 1
-		newDummyVar
+	def nextVar(v: String) : String = {
+		val newVar : String = v.concat("1")
+		newVar
+		// val dummyString = "dummyString"
+		// var newDummyVar = dummyString.concat(dummyVarIndex.toString)
+		// dummyVarIndex += 1
+		// newDummyVar
 	}
 
 	def havocsFromModifiedVars(block: Block) : GuardedProgram = block match {
@@ -112,7 +114,7 @@ object GuardedGen {
 			case Nil => List()
 			case s :: right => s match {
 				case Assign(x, value) => {
-					var tmp = nextVar()
+					var tmp = nextVar(x)
 					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
 					var a2 = HavocVar(x)
 					var a3 = Assume(Assn(BCmp((Var(x), "=", substituteVar(x, None, value, tmp)))))
@@ -120,7 +122,7 @@ object GuardedGen {
 				}
 				case Write(x, i, value) => {
 					// GOTTA MODIFY LOTS
-					var tmp = nextVar()
+					var tmp = nextVar(x)
 					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
 					var a2 = HavocVar(x)
 					var a3 = Assume(Assn(BCmp((Var(x), "=", substituteVar(x, Some(i), value, tmp)))))
