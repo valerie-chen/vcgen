@@ -10,6 +10,7 @@ import WeakestPreGen._
 import GuardedGen._
 import ImpParser._
 
+
 object VCGen {
 
   val testz3 = "(declare-fun x () Int)(declare-fun y () Int)(assert (>= x y))(check-sat)(get-model)(exit)"
@@ -26,7 +27,6 @@ object VCGen {
     val wp = wpgen(guarded)
     println("WEAKEST PRE:")
     println(wp)
-
     // test
     // val sat = ("echo " + testz3) #| "z3 -smt2 -in" !!;
     val sat = smtgen(wp).mkString
