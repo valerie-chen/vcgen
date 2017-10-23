@@ -1,4 +1,4 @@
-SRC = src/vcgen.scala
+SRC = src/*.scala
 
 all: help
 	-[ -e classes ] || mkdir classes
