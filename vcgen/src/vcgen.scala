@@ -3,6 +3,7 @@ import java.io.FileReader
 
 // our objects
 import OurObjects._
+import WeakestPreGen._
 import GuardedGen._
 import ImpParser._
 
@@ -16,6 +17,9 @@ object VCGen {
     println(imp)
     val guarded = makeGuarded(imp.get)
     println("GUARDED:")
+    println(guarded)
+    val wp = wpgen(guarded)
+    println("WEAKEST PRE:")
     println(guarded)
   }
 }
