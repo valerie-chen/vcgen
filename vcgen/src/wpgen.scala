@@ -3,59 +3,62 @@ import OurObjects._
 import GuardedGen._
 
 object WeakestPreGen {
+	var dummyVarIndex = 0
 
-
-	/* get all guarded vars -- using Anton's for now 
-	def allGuardVars(full: GuardedProgram) : List[String] = {
-		def aexpVars(aexp: ArithExp) : List[String] = aexp match {
-			case Num(_) => Nil
-			case Var(n) => List(n)
-			case Read(n, i) => n :: aexpVars(i)
-			case Add(l, r) => aexpVars(l) ::: aexpVars(r)
-			case Sub(l, r) => aexpVars(l) ::: aexpVars(r)
-			case Mul(l, r) => aexpVars(l) ::: aexpVars(r)
-			case Div(l, r) => aexpVars(l) ::: aexpVars(r)
-			case Mod(l, r) => aexpVars(l) ::: aexpVars(r)
-			case Parens(a) => aexpVars(a)
-		}
-
-		def compVars(cmp: Comparison) : List[String] = {
-			aexpVars(cmp._1) ::: aexpVars(cmp._3)
-		}
-
-		def bexpVars(bexp: BoolExp) : List[String] = bexp match {
-			case True => Nil
-			case False => Nil
-			case BCmp(c) => compVars(c)
-			case BNot(b) => bexpVars(b)
-			case BDisj(l, r) => bexpVars(l) ::: bexpVars(r)
-			case BConj(l, r) => bexpVars(r) ::: bexpVars(r)
-			case BParens(b) => bexpVars(b)
-		}
-
-		def assnVars(assn: Assertion) : List[String] = assn match {
-			case AssnBool(c) => bexpVars(c)
-			case Negate(a) => assnVars(a)
-			case Or(l, r) => assnVars(l) ::: assnVars(r)
-			case And(l, r) => assnVars(l) ::: assnVars(r)
-			case Implies(l, r) => assnVars(l) ::: assnVars(r)
-			case ForAll(ns, a) => ns ::: assnVars(a)
-			case Exists(ns, a) => ns ::: assnVars(a)
-			case ParensAssn(a) => assnVars(a)
-		}
-
-		def guardVars(gcs: GuardedCmd) : List[String] = gcs match{
-			case Assume(a) => assnVars(a)
-			case Assert(a) => assnVars(a)
-			case HavocVar(s) => List(s)
-			case HavocArr(s, aexp) => s :: aexpVars(aexp)
-			case Seq(gc1, gc2) => allGuardVars(gc1) ::: allGuardVars(gc2)
-			case NonDet(gc1, gc2) => allGuardVars(gc1) ::: allGuardVars(gc2)
-		}
-
-		guardVars(full)
+	def nextVar() : String = {
+		val dummyString = "dummyString"
+		var newDummyVar = dummyString.concat(dummyVarIndex.toString)
+		dummyVarIndex += 1
+		newDummyVar
 	}
-	*/
+
+	def allGuardVars(prog: GuardedProgram) : List[String] = {
+
+		def arithVars(a: ArithExp) : List[String] = a match {
+			case Num(_) => Nil
+			case Var(v) => List(v)
+			case Read(n, i) => n :: arithVars(i)
+			case Add(l, r) => arithVars(l) ::: arithVars(r)
+			case Sub(l, r) => arithVars(l) ::: arithVars(r)
+			case Mul(l, r) => arithVars(l) ::: arithVars(r)
+			case Div(l, r) => arithVars(l) ::: arithVars(r)
+			case Mod(l, r) => arithVars(l) ::: arithVars(r)
+			case Parens(a) => arithVars(a)
+		}
+
+		def boolVars(b: BoolExp) : List[String] = b match {
+			case False => Nil
+			case True => Nil
+			case BCmp(cmp) => arithVars(cmp._1) ::: arithVars(cmp._3)
+			case BNot(b) => boolVars(b)
+			case BDisj(left, right) => boolVars(left) ::: boolVars(right)
+			case BConj(left, right) => boolVars(left) ::: boolVars(right)
+			case BParens(b) => boolVars(b)
+		}
+
+		def assertionVars(a: Assertion) : List[String] = a match {
+			case Assn(b) => boolVars(b)
+			case ANot(a) => assertionVars(a)
+			case ADisj(a, b) => assertionVars(a) ::: assertionVars(b)
+			case AConj(a, b) => assertionVars(a) ::: assertionVars(b)
+			case AImp(a, b) => assertionVars(a) ::: assertionVars(b)
+			case ForAll(x, cond) => x ::: assertionVars(cond)
+			case Exists(x, cond) => x ::: assertionVars(cond)
+		}
+
+		def progGuardVars(prog: GuardedProgram) : List[String] = prog match {
+			case Nil => List()
+			case c :: right => c match {
+				case Assume(a) => assertionVars(a) ::: allGuardVars(right)
+				case Assert(a) => assertionVars(a) ::: allGuardVars(right)
+				case HavocVar(x) => x :: allGuardVars(right)
+				case HavocArray(x, i) => x :: arithVars(i) ::: allGuardVars(right)
+				case LogSplit(a, b) => allGuardVars(a) ::: allGuardVars(b) ::: allGuardVars(right)
+			}
+		}	
+		
+		progGuardVars(prog).distinct
+	}	
 
 	def wpComparison(old: String, ind: Option[ArithExp], tmp: String, cmp: Comparison) : Comparison = {
 		return (substituteVar(old, ind, cmp._1, tmp), cmp._2, substituteVar(old, ind, cmp._3, tmp))
@@ -83,7 +86,7 @@ object WeakestPreGen {
 	}
 
 	def wpgen(g: GuardedProgram) : Assertion = {
-		//var allvars = allGuardVars(gcs)
+		var allvars = allGuardVars(g)
 
 		def wp(gp : GuardedProgram, a : Assertion) : Assertion = gp match {
 			case Nil => Assn(True)
