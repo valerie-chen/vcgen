@@ -137,7 +137,7 @@ object SMTGen {
 	  	smt = smt.concat("(declare-fun ".concat(v).concat(" () Int)\n"))
 		}
 		val wpArrs = allWpArrs(wp).toSet
-		wpArrs.foreach(v => (smt = smt.concat("(declare-const ".concat(v).concat(" () (Array Int))\n"))))
+		wpArrs.foreach(v => (smt = smt.concat("(declare-const ".concat(v).concat(" (Array Int Int))\n"))))
 
     smt = smt.concat("(assert ").concat(genAssn(wp)).concat(")\n")
    	smt.concat("(check-sat)\n")

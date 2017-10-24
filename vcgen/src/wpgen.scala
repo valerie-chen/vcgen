@@ -92,7 +92,10 @@ object WeakestPreGen {
 		def modifyArith(ar: ArithExp, name: String, index: Option[ArithExp], sub: String) : ArithExp = ar match {
 			case Num(x) => Num(x)
 			case Var(v) => if (v == name) { Var(sub) } else { Var(v) }
-			case Read(n, i) => if (n == name && i == index.get) { Read(sub, i) } else { Read(n, i) }
+			case Read(n, i) => index match {
+				case None => Read(n, i)
+				case Some(x) => if (n == name && i == x) { Read(sub, i) } else { Read(n, i) }
+			}
 			case Add(l, r) => Add(modifyArith(l, name, index, sub), modifyArith(r, name, index, sub))
 			case Sub(l, r) => Sub(modifyArith(l, name, index, sub), modifyArith(r, name, index, sub))
 			case Mul(l, r) => Mul(modifyArith(l, name, index, sub), modifyArith(r, name, index, sub))

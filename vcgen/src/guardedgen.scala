@@ -97,11 +97,11 @@ object GuardedGen {
 				}
 			}
 		}
-		case Add(left, right) => Add(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
-		case Sub(left, right) => Sub(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
-		case Mul(left, right) => Mul(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
-		case Div(left, right) => Div(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
-		case Mod(left, right) => Mod(substituteVar(name, index, left, sub), substituteVar(name, index, left, sub))
+		case Add(left, right) => Add(substituteVar(name, index, left, sub), substituteVar(name, index, right, sub))
+		case Sub(left, right) => Sub(substituteVar(name, index, left, sub), substituteVar(name, index, right, sub))
+		case Mul(left, right) => Mul(substituteVar(name, index, left, sub), substituteVar(name, index, right, sub))
+		case Div(left, right) => Div(substituteVar(name, index, left, sub), substituteVar(name, index, right, sub))
+		case Mod(left, right) => Mod(substituteVar(name, index, left, sub), substituteVar(name, index, right, sub))
 		case Parens(a) => Parens(substituteVar(name, index, a, sub))
 	}
 
@@ -124,8 +124,8 @@ object GuardedGen {
 					// GOTTA MODIFY LOTS
 					var tmp = nextVar(x)
 					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
-					var a2 = HavocVar(x)
-					var a3 = Assume(Assn(BCmp((Var(x), "=", substituteVar(x, Some(i), value, tmp)))))
+					var a2 = HavocArray(x, i)
+					var a3 = Assume(Assn(BCmp((Read(x, i), "=", substituteVar(x, Some(i), value, tmp)))))
 					a1 :: a2 :: a3 :: mGuard(right)
 				}
 				case ParAssign(x1, x2, value1, value2) => {
