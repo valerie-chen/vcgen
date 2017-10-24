@@ -86,7 +86,7 @@ object SMTGen {
 			case False => "false"
 			case True => "true"
 			case BCmp(cmp) => cmp._2 match {
-				case "!=" => "(not (=".concat(genArith(cmp._1)).concat(" ").concat(genArith(cmp._3)).concat("))")
+				case "!=" => "(not (= ".concat(genArith(cmp._1)).concat(" ").concat(genArith(cmp._3)).concat("))")
 				case x => "(".concat(x).concat(" ").concat(genArith(cmp._1)).concat(" ").concat(genArith(cmp._3)).concat(")")
 			}
 			case BNot(b) => "(not ".concat(genBool(b)).concat(")")
@@ -122,7 +122,7 @@ object SMTGen {
 		}
 		wpArrs.foreach(v => (smt = smt.concat("(declare-const ".concat(v).concat(" (Array Int Int))\n"))))
 
-    smt = smt.concat("(assert ").concat(genAssn(wp)).concat(")\n")
-   	smt.concat("(get-model)\n(check-sat)\n")
+    smt = smt.concat("(assert (not ").concat(genAssn(wp)).concat("))\n")
+   	smt.concat("(check-sat)\n") // (get-model)
 	}
 }

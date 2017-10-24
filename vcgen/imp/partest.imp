@@ -1,0 +1,6 @@
+program order
+  pre x = 0
+  post y = 0
+is
+  x, y := y, x;
+end

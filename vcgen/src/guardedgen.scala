@@ -87,7 +87,7 @@ object GuardedGen {
 				if (n == name) { 
 					Var(sub)
 				} else {
-					Var(name)
+					Var(n)
 				}
 			}
 			case Some(i) => Var(name)
@@ -134,7 +134,10 @@ object GuardedGen {
 					a1 :: a2 :: a3 :: mGuard(right)
 				}
 				case ParAssign(x1, x2, value1, value2) => {
-					mGuard(List(Assign(x1, value1), Assign(x2, value2))) ::: mGuard(right)
+					val tmp1 = nextVar(x1)
+					val tmp2 = nextVar(x2)
+					mGuard(List(Assign(tmp1, substituteVar(x1, None, value1, tmp1)), Assign(tmp2, substituteVar(x2, None, value2, tmp2)), Assign(x1, Var(tmp1)), Assign(x2, Var(tmp2)))) ::: mGuard(right)
+					// mGuard(List(Assign(x1, value1), Assign(x2, value2))) ::: mGuard(right)
 				}
 				case If(cond, th, el) => {
 					var a1 = Assume(Assn(cond)) :: mGuard(th)

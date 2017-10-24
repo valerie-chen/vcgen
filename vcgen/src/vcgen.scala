@@ -56,24 +56,29 @@ object VCGen {
     val reader = new FileReader(args(0))
     import ImpParser._;
     val imp = parseAll(prog, reader)
-    println("PARSE:")
-    println(imp)
+    // println("PARSE:")
+    // println(imp)
     val guarded = makeGuarded(imp.get)
-    println("GUARDED:")
-    println(guarded)
+    // println("GUARDED:")
+    // println(guarded)
     val wp = wpgen(guarded)
-    println("WEAKEST PRE:")
-    println(wp)
+    // println("WEAKEST PRE:")
+    // println(wp)
 
-    println("PRETTY:")
-    prettyPrint(wp)
+    // println("PRETTY:")
+    // prettyPrint(wp)
 
     // test
     // val sat = ("echo " + testz3) #| "z3 -smt2 -in" !!;
     val sat = smtgen(wp)
-    println(sat)
-    val out = ("echo " + sat) #| "z3 -smt2 -in" !!;
+    // println(sat)
+    val out : String = ("echo " + sat) #| "z3 -smt2 -in" !!;
     // println("SAT:") 
-    println(out)
+    // println(out)
+    if (out contains "unsat") {
+      println("sat")
+    } else {
+      println("unsat")
+    }
   }
 }
