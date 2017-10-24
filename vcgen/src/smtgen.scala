@@ -4,33 +4,6 @@ import WeakestPreGen._
 
 object SMTGen {
 
-	// get vars in aexp
-
-	// get vars in comparison
-
-	// get vars in bexp
-
-	// get vars in assertions
-
-// ------
-
-	// get arrs in aexp
-
-	// get arrs in comparison
-
-	// get arrs in bexp
-
-	// get arrs in assertions
-	
-// -----
-
-	//parse aexp
-
-	//parse comparison
-
-	//parse bexp
-
-	//parse assertions
 	def allWpVars(wp: Assertion) : List[String] = {
 		def arithVars(ar: ArithExp) : List[String] = ar match {
 			case Num(_) => List()
@@ -101,7 +74,7 @@ object SMTGen {
 		def genArith(arr: ArithExp) : String = arr match {
 			case Num(x) => x.toString
 			case Var(v) => v
-			case Read(n, i) => n.concat("[").concat(genArith(i)).concat("]")
+			case Read(n, i) => "(select ".concat(n).concat(" ").concat(genArith(i)).concat(")")
 			case Add(l, r) => "(+ ".concat(genArith(l)).concat(" ").concat(genArith(r)).concat(")")
 			case Sub(l, r) => "(- ".concat(genArith(l)).concat(" ").concat(genArith(r)).concat(")")
 			case Mul(l, r) => "(* ".concat(genArith(l)).concat(" ").concat(genArith(r)).concat(")")
@@ -121,25 +94,35 @@ object SMTGen {
 			case BConj(left, right) => "(and ".concat(genBool(left)).concat(" ").concat(genBool(right)).concat(")")
 			case BParens(b) => genBool(b)
 		}
+		def varFormat(vars: List[String]) : List[String] = {
+			vars.map( n => "(".concat(n).concat(" Int)"))
+		}
 		def genAssn(assn: Assertion) : String = assn match {
 			case Assn(b) => genBool(b)
 			case ANot(a) => "(not ".concat(genAssn(a)).concat(")")
 			case ADisj(a, b) => "(or ".concat(genAssn(a)).concat(" ").concat(genAssn(b)).concat(")")
 			case AConj(a, b) => "(and ".concat(genAssn(a)).concat(" ").concat(genAssn(b)).concat(")")
 			case AImp(a, b) => "(=> ".concat(genAssn(a)).concat(" ").concat(genAssn(b)).concat(")")
-			case ForAll(x, cond) => "(forall (".concat(x.mkString(" ")).concat(") ").concat(genAssn(cond)).concat(")")
-			case Exists(x, cond) => "(exists (".concat(x.mkString(" ")).concat(") ").concat(genAssn(cond)).concat(")")
+			case ForAll(x, cond) => {
+				val formattedX = varFormat(x)
+				"(forall (".concat(formattedX.mkString(" ")).concat(") ").concat(genAssn(cond)).concat(")")
+			}
+			case Exists(x, cond) => {
+				val formattedX = varFormat(x)
+				"(exists (".concat(formattedX.mkString(" ")).concat(") ").concat(genAssn(cond)).concat(")")
+			}
+			//"(exists (".concat(x.mkString(" ")).concat(") ").concat(genAssn(cond)).concat(")")
 		}
 
 		var smt = ""
-	  val wpVars = allWpVars(wp).toSet
+		val wpArrs = allWpArrs(wp).toSet
+	  val wpVars = allWpVars(wp).toSet--wpArrs
 	  wpVars.foreach { v => 
 	  	smt = smt.concat("(declare-fun ".concat(v).concat(" () Int)\n"))
 		}
-		val wpArrs = allWpArrs(wp).toSet
 		wpArrs.foreach(v => (smt = smt.concat("(declare-const ".concat(v).concat(" (Array Int Int))\n"))))
 
     smt = smt.concat("(assert ").concat(genAssn(wp)).concat(")\n")
-   	smt.concat("(check-sat)\n")
+   	smt.concat("(get-model)\n(check-sat)\n")
 	}
 }

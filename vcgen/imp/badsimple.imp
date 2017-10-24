@@ -1,0 +1,5 @@
+program mult
+  post n < 0
+is
+  n := 0;
+end
