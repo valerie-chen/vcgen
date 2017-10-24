@@ -1,0 +1,10 @@
+program bench6
+	pre 0 <= N
+	post X > 0
+is
+	X := Y;
+	n := 1;
+	while X <= N && n*3 > X
+		X := X + 1;
+		n := n * 5 / 4;
+end
