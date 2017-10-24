@@ -67,12 +67,13 @@ object VCGen {
 
     println("PRETTY:")
     prettyPrint(wp)
-    
+
     // test
     // val sat = ("echo " + testz3) #| "z3 -smt2 -in" !!;
-    val sat = smtgen(wp).mkString
+    val sat = smtgen(wp)
+    println(sat)
     val out = ("echo " + sat) #| "z3 -smt2 -in" !!;
-    println("SAT:") 
+    // println("SAT:") 
     println(out)
   }
 }
