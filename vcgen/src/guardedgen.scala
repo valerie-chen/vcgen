@@ -3,9 +3,14 @@ import OurObjects._
 
 object GuardedGen {
 	var dummyVarIndex = 0
+	var impVars : Set[String] = Set()
 
 	def nextVar(v: String) : String = {
-		val newVar : String = v.concat("1")
+		var newVar : String = v.concat("1")
+		while (impVars.contains(newVar)) {
+			newVar = newVar.concat("1")
+		}
+		impVars = impVars + newVar
 		newVar
 		// val dummyString = "dummyString"
 		// var newDummyVar = dummyString.concat(dummyVarIndex.toString)
@@ -91,7 +96,7 @@ object GuardedGen {
 			case None => Read(n, i)
 			case Some(i2) => {
 				if (i == i2 && n == name) {
-					Var(sub)
+					Read(sub, i)// Var(sub)
 				} else {
 					Read(n, i)
 				}
@@ -107,7 +112,7 @@ object GuardedGen {
 
   /* Parsing for Program. */
   def makeGuarded(prog: IMPProgram) : GuardedProgram = {
-  	var impVars = allVars(prog)
+  	impVars = allVars(prog).toSet
 
 	  /* Parsing the list of statements. */
 		def mGuard(block: Block) : GuardedProgram = block match {
@@ -123,7 +128,7 @@ object GuardedGen {
 				case Write(x, i, value) => {
 					// GOTTA MODIFY LOTS
 					var tmp = nextVar(x)
-					var a1 = Assume(Assn(BCmp((Var(tmp), "=", Var(x)))))
+					var a1 = Assume(Assn(BCmp((Read(tmp, i), "=", Read(x, i)))))
 					var a2 = HavocArray(x, i)
 					var a3 = Assume(Assn(BCmp((Read(x, i), "=", substituteVar(x, Some(i), value, tmp)))))
 					a1 :: a2 :: a3 :: mGuard(right)

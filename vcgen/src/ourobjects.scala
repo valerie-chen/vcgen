@@ -44,17 +44,6 @@ object OurObjects {
   case class ForAll(x: List[String], cond: Assertion) extends Assertion
   case class Exists(x: List[String], cond: Assertion) extends Assertion
 
-  // trait Annotation
-  // type AnnotationBlock = List[Annotation]
-
-  // // class Post(a: AssertionBlock)
-  // // class Pre(a: AssertionBlock)
-  // // class Inv(a: AssertionBlock)
-  // case class Post(a: Assertion) extends Annotation
-  // case class Pre(a: Assertion) extends Annotation
-  // case class Inv(a: Assertion) extends Annotation
-
-  /* Statements and blocks. */
   trait Statement
   type Block = List[Statement]
 
